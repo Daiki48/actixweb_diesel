@@ -12,6 +12,7 @@ use actix_web::{
     get,
     post,
     put,
+    delete,
     web,
     App,
     HttpResponse,
@@ -69,6 +70,18 @@ async fn put(
     Ok(HttpResponse::Created().body("update ok"))
 }
 
+#[delete("/users/{id}")]
+async fn remove(db: web::Data<db::Pool>, path: web::Path<i32>) -> Result<impl Responder> {
+    let id = path.into_inner();
+    let mut conn = db.get().unwrap();
+    let target = schema::users::dsl::users.filter(schema::users::dsl::id.eq(id));
+
+    diesel::delete(target)
+        .execute(&mut conn)
+        .expect("Error deleting new post");
+
+    Ok(HttpResponse::Created().body("Delete ok"))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -79,6 +92,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(Data::new(pool.clone()))
             .service(get)
+            .service(post)
+            .service(put)
+            .service(remove)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
