@@ -11,6 +11,7 @@ use actix_web::web::Data;
 use actix_web::{
     get,
     post,
+    put,
     web,
     App,
     HttpResponse,
@@ -49,6 +50,25 @@ async fn post (db: web::Data<db::Pool>, item: web::Json<model::User>) -> Result<
 
     Ok(HttpResponse::Created().body("get ok"))
 }
+
+#[put("/users/{id}")]
+async fn put(
+    db: web::Data<db::Pool>,
+    path: web::Path<i32>,
+    item: web::Json<model::User>,
+) -> Result<impl Responder> {
+    let id = path.into_inner();
+    let mut conn = db.get().unwrap();
+    let target = schema::users::dsl::users.filter(schema::users::dsl::id.eq(id));
+
+    diesel::update(target)
+        .set(schema::users::dsl::email.eq(item.email.to_string()))
+        .execute(&mut conn)
+        .expect("Error updating new post");
+
+    Ok(HttpResponse::Created().body("update ok"))
+}
+
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
